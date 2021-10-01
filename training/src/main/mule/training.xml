@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:java="http://www.mulesoft.org/schema/mule/java" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:wsc="http://www.mulesoft.org/schema/mule/wsc"
+	xmlns:jms="http://www.mulesoft.org/schema/mule/jms" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd
+http://www.mulesoft.org/schema/mule/wsc http://www.mulesoft.org/schema/mule/wsc/current/mule-wsc.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/java http://www.mulesoft.org/schema/mule/java/current/mule-java.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="0e68e343-d42b-48f5-8d63-ad6ec906a48d" basePath="training" >
+		<http:listener-connection host="localhost" port="8091" />
+	</http:listener-config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="f64b0166-9ecf-4574-ba35-5e9c88523d7f" />
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="eb9d06e6-22ba-4868-81f5-b52969cfc8f8" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="Warlock@123" database="muletraining" />
+	</db:config>
+	<jms:config name="JMS_Config" doc:name="JMS Config" doc:id="fd314e2b-58f1-47ff-b2d2-bc62daba5547" >
+		<jms:active-mq-connection username="admin" password="admin" >
+			<jms:factory-configuration brokerUrl="tcp://localhost:61616" />
+		</jms:active-mq-connection>
+	</jms:config>
+	<wsc:config name="Web_Service_Consumer_Config" doc:name="Web Service Consumer Config" doc:id="b4023cdb-b058-4936-b82e-9cd52e96a686" >
+		<wsc:connection wsdlLocation="http://www.dneonline.com/calculator.asmx?wsdl" service="Calculator" port="CalculatorSoap" address="http://www.dneonline.com/calculator.asmx" />
+	</wsc:config>
+	<wsc:config name="Web_Service_Flights" doc:name="Web Service Consumer Config" doc:id="51314aa7-f22d-4ad2-bbf4-13b239797e50" >
+		<wsc:connection wsdlLocation="http://mu.learn.mulesoft.com/delta?wsdl" service="TicketServiceService" port="TicketServicePort" address="http://mu.learn.mulesoft.com/delta" />
+	</wsc:config>
+	<http:request-config name="UserDetails" doc:name="HTTP Request configuration" doc:id="70b2f89c-70a8-4616-bc56-4dd49d7275df" >
+		<http:request-connection host="jsonplaceholder.typicode.com" />
+	</http:request-config>
+	<http:request-config name="UnitedFlights" doc:name="HTTP Request configuration" doc:id="f3f71e7c-b145-4aa8-b16c-fc3d79149aba" >
+		<http:request-connection host="mu.learn.mulesoft.com" />
+	</http:request-config>
+	<flow name="trainingFlow" doc:id="9147804c-cd1b-4ebc-a3b3-fce002f98b38" >
+		<http:listener doc:name="Listener" doc:id="216ba06d-d240-43b8-aac8-cc2ee710b2cf" config-ref="HTTP_Listener_config" path="/readfile">
+			<http:response>
+				<http:body ><![CDATA[#[%dw 2.0
+output application/json
+---
+payload]]]></http:body>
+			</http:response>
+		</http:listener>
+		<file:read doc:name="Read" doc:id="88c3b976-edcf-4df9-868c-48093374fe15" config-ref="File_Config" path="C:\Users\d.c.rajendran\OneDrive - Accenture\Projects_28Jul21\Trainings\Mulesoft\resources\emp1.xml"/>
+		<set-payload value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;"result" : payload,&#10;"created data" : now()&#10;}]' doc:name="Set Payload" doc:id="2b1bf37f-65af-4707-a043-d35a36945562" />
+		<logger level="INFO" doc:name="Logger" doc:id="9cd6a91c-3d98-4f5d-93df-43c2fb498ace" message="#[payload]" />
+		<db:select doc:name="Select Customer" doc:id="8efbe01c-2eae-4690-9e79-3e948b1141ec" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from customer;]]></db:sql>
+		</db:select>
+		<logger level="INFO" doc:name="Logger" doc:id="d961a75b-4cc7-4a86-b097-18f6cb20c21f" message="#[payload]"/>
+		<set-payload value="#[%dw 2.0&#10;output application/json&#10;---&#10;payload]" doc:name="Set Payload" doc:id="347d4511-84e4-450d-967f-4faf67911bb2" />
+		<logger level="INFO" doc:name="Logger" doc:id="77cbe232-0b54-4ced-a75c-7ecd9c51dece" message="#[payload]"/>
+		<file:write doc:name="Write" doc:id="9388c425-7997-4aa7-8460-8ef77c5c09c8" config-ref="File_Config" path="#['C:\\Training\\resources\\Output\\Myfile' ++ ( now () as String {format: 'yyyy-MM-dd-hh-mm-ss'}) ++ '.txt']" />
+		<jms:publish doc:name="Publish" doc:id="d4b1fe47-3dec-4d43-a67e-190d3bd23705" config-ref="JMS_Config" destination="employee"/>
+	</flow>
+	<flow name="consumeJMS" doc:id="65ed7e6c-8689-4480-b689-26fd0243b5a6" >
+		<http:listener doc:name="Listener" doc:id="0b42f386-e7f0-4f10-a4cf-0fcf0fda6ef5" config-ref="HTTP_Listener_config" path="/jms1">
+			<http:response >
+				<http:body ><![CDATA[#[%dw 2.0
+output application/json
+---
+payload]]]></http:body>
+			</http:response>
+		</http:listener>
+		<jms:consume doc:name="Consume" doc:id="5b422db0-f9f1-4f28-a70f-29a74d46eb0e" config-ref="JMS_Config" destination="employee">
+			<jms:consumer-type >
+				<jms:queue-consumer />
+			</jms:consumer-type>
+		</jms:consume>
+	</flow>
+	<flow name="soapFlows" doc:id="48e23c96-7e83-439e-9f8b-338c5ac8fac3" >
+		<http:listener doc:name="Listener" doc:id="1d38de69-7e64-4f7b-abf4-3b4a2c1cfd30" config-ref="HTTP_Listener_config" path="/soap"/>
+		<choice doc:name="Choice" doc:id="2a92127b-174f-484b-b8df-00a787a7d274" >
+			<when expression='#[attributes.queryParams.operation == "Add"]'>
+				<ee:transform doc:name="Transform Message" doc:id="7d053efc-0f50-4713-a168-48c8a514bbbd">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/xml
+ns ns0 http://tempuri.org/
+---
+{
+	ns0#Add: {
+		ns0#intA: (attributes.queryParams.N1) default 0,
+		ns0#intB: (attributes.queryParams.N2) default 0
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+				<wsc:consume doc:name="Consume_Add" doc:id="63be3bb4-831b-4eb7-91a4-5dbdce875c60" config-ref="Web_Service_Consumer_Config" operation="Add" />
+				<ee:transform doc:name="Transform Message" doc:id="bab8ed7b-6df9-42cf-9bfc-fec7563c167a">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0ns ns0 http://tempuri.org/
+
+output application/json
+---
+{
+	result: payload.body.ns0#AddResponse.ns0#AddResult
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			</when>
+			<when expression='#[attributes.queryParams.operation == "Subtract"]'>
+				<ee:transform doc:name="Transform Message" doc:id="460a98f2-4108-4ecc-acde-b1b002ea4047">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/xml
+ns ns0 http://tempuri.org/
+---
+{
+	ns0#Subtract: {
+		ns0#intA: (attributes.queryParams.N1) default 1,
+		ns0#intB: (attributes.queryParams.N2) default 1
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+				<wsc:consume operation="Subtract" doc:name="Consume_Sub" doc:id="bba04e78-91ef-4e9d-9ba8-92b9e19a389f" config-ref="Web_Service_Consumer_Config" />
+				<ee:transform doc:name="Transform Message" doc:id="935fc8e1-278b-49f3-9909-4f89af37fe37">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+ns ns0 http://tempuri.org/
+
+output application/json
+---
+{
+	result: payload.body.ns0#SubtractResponse.ns0#SubtractResult
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			
+</when>
+<when expression='#[attributes.queryParams.operation == "FindFlight"]'>
+				<ee:transform doc:name="Transform Message" doc:id="3ffba9b9-6a5f-4e44-8559-dd9019a56386">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/xml
+ns ns0 http://soap.training.mulesoft.com/
+---
+{
+	ns0#findFlight: {
+		destination: attributes.queryParams.destination
+	}
+}
+]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<wsc:consume operation="findFlight" doc:name="Consume_Sub" doc:id="fc6db7e3-b7ec-4287-a9a0-6a325ff472b3" config-ref="Web_Service_Flights" />
+				<ee:transform doc:name="MapFindFlightsResponse" doc:id="007a5724-4fd2-45c8-9d71-604d0c36069a" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload.body.findFlightResponse
+]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			
+
+</when>
+			<otherwise >
+				<wsc:consume doc:name="Consume" doc:id="98ac5079-293a-4f8b-985b-f71d4e05dbbb" config-ref="Web_Service_Flights" operation="listAllFlights"/>
+				<ee:transform doc:name="Transform Message" doc:id="c66622f2-6214-49b9-8c6b-589fab1a22b1" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload.body.listAllFlightsResponse
+]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="Logger" doc:id="59945e02-4665-426d-8dfc-14dd31186ad6" message="payload"/>
+	</flow>
+	<flow name="restFindUser" doc:id="8cc1fe77-539d-495e-b89e-4a4d397c9ee1" >
+		<http:listener doc:name="Listener" doc:id="c5394848-61a0-4225-bab9-34a262ae2dc0" config-ref="HTTP_Listener_config" path="/rest/users/{userid}"/>
+		<http:request method="GET" doc:name="Request" doc:id="a180e2c1-0eaa-4ca8-bec8-186d3ec7843f" config-ref="UserDetails" path="/users/{id}">
+			<http:uri-params ><![CDATA[#[output application/java
+---
+{
+	"id" : attributes.uriParams.userid
+}]]]></http:uri-params>
+		</http:request>
+	</flow>
+	<flow name="restFindFlight" doc:id="cad62c04-3d6d-4c20-810b-cf9afed876fc" >
+		<http:listener doc:name="Listener" doc:id="a86611a1-081d-4313-88ea-623f5f279322" config-ref="HTTP_Listener_config" path="/rest/flights"/>
+		<set-variable value="#[attributes.queryParams.loc as String]" doc:name="Set Variable" doc:id="3699ac11-0887-4bd4-a644-fcbfda9ad2ec" variableName="dest"/>
+		<http:request method="GET" doc:name="Request" doc:id="3c143ed7-3a8a-41c3-8013-49b9f5db8c0a" config-ref="UnitedFlights" path="/united/flights/{destination}">
+			<http:uri-params ><![CDATA[#[output application/java
+---
+{
+	"destination" : vars.dest
+}]]]></http:uri-params>
+		</http:request>
+	</flow>
+	<flow name="choiceCheck" doc:id="313f50ea-c5f9-4943-9fea-71bd77f61e30" >
+		<http:listener doc:name="Listener" doc:id="50322d34-3bb1-4199-a16a-db112c97d44c" config-ref="HTTP_Listener_config" path="/choice/{op}"/>
+		<choice doc:name="Choice" doc:id="8dba2699-791f-46ed-bcd8-b95a58ba661f" >
+			<when expression="#[attributes.uriParams.op == 'Add']">
+				<set-payload value="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	result : (attributes.queryParams.N1 default 0) as Number + (attributes.queryParams.N2 default 0) as Number&#10;}]" doc:name="Set Payload" doc:id="1ead1ce6-acfb-492d-bc8e-07ec4584287b" />
+			</when>
+			<when expression="#[attributes.uriParams.op == 'Sub']">
+				<set-payload value="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	result: (attributes.queryParams.N1 default 0) as Number - (attributes.queryParams.N2 default 0) as Number&#10;}]" doc:name="Set Payload" doc:id="6e46fc9e-564e-40c8-9a77-d6652808886a" />
+			</when>
+			<otherwise >
+				<set-payload value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	result: "uri parameter has to be either Add or Sub"&#10;}]' doc:name="Set Payload" doc:id="06831c34-0d0c-4b25-a916-5bcff6a54c38" />
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="trainingFlow1" doc:id="25d37524-77f1-4a70-888a-a3ac8214da42" >
+		<http:listener doc:name="Listener" doc:id="ee7bcf5a-e580-48df-8723-ddefd927bcfe" config-ref="HTTP_Listener_config" path="/scatter"/>
+		<scatter-gather doc:name="Scatter-Gather" doc:id="d7003e23-5793-4e37-975c-3800d784c9d8" >
+			<route >
+				<set-payload value="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	'name' : 'Dinesh',&#10;	'city' : 'Sydney'&#10;}]" doc:name="Set Payload" doc:id="2f55e2ec-9be7-4c72-b0ee-a7152c40a8ab" />
+			</route>
+			<route >
+				<set-payload value="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	'name' : 'Vivek',&#10;	'city' : 'Mexico'&#10;}]" doc:name="Set Payload" doc:id="ace1a1d7-ea42-4991-ae2e-7eca9f7fb046" />
+			</route>
+			<route >
+				<set-payload value="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	'name' : 'Ramesh',&#10;	'city' : 'Chennai'&#10;}]" doc:name="Set Payload" doc:id="ca126af5-05f8-4d9d-a2b8-fb2b93e00026" />
+			</route>
+		</scatter-gather>
+		<set-payload value="#[%dw 2.0&#10;output application/json&#10;---&#10;flatten(payload..payload)]" doc:name="Set Payload" doc:id="840c2681-4592-4fc2-9dba-06d593f18d7f" />
+		<logger level="INFO" doc:name="Logger" doc:id="5903abcd-956f-4ce4-9d38-78d92d084e84" message="#[payload]"/>
+	</flow>
+	<flow name="javaCalcUtil" doc:id="4d361d13-2c46-4403-ba0a-454dad574f7e" >
+		<http:listener doc:name="Listener" doc:id="19ed4703-dbef-4404-a91d-41b621162c42" config-ref="HTTP_Listener_config" path="javaCalc"/>
+		<java:invoke-static doc:name="Invoke static" doc:id="d21e7e2c-9ee1-468f-9194-3b1c83254434" class="training.CalcUtil" method="add(int,int)">
+			<java:args ><![CDATA[#[%dw 2.0
+output application/java
+---
+{
+	a: attributes.queryParams.N1 default 0,
+	b: attributes.queryParams.N2 default 0
+}]]]></java:args>
+		</java:invoke-static>
+		<ee:transform doc:name="Transform Message" doc:id="3af07c87-d86b-4cc2-9e65-b3f14be9b572" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="nonStaticJavaCall" doc:id="c776fd64-494b-4a14-940e-5e062eea0aca" >
+		<http:listener doc:name="Listener" doc:id="872c7847-87b4-4f49-962c-8b5fc829e8a8" config-ref="HTTP_Listener_config" path="/javaCalc/nonStatic"/>
+		<java:new doc:name="New" doc:id="471cd92b-6ecc-47f7-b78c-e976488f8ac3" class="training.CalcUtil" constructor="CalcUtil()" target="diff"/>
+		<java:invoke doc:name="Invoke" doc:id="c0b34c0f-3fba-49fd-8e39-a91e9516f088" instance="#[vars.diff]" class="training.CalcUtil" method="sub(int,int)">
+			<java:args ><![CDATA[#[%dw 2.0
+output application/java
+---
+{
+	a: attributes.queryParams.N1 default 1,
+	b: attributes.queryParams.N2 default 1
+}]]]></java:args>
+		</java:invoke>
+		<set-payload value="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	'Subtraction Result' : payload &#10;}]" doc:name="Set Payload" doc:id="945d5711-d765-49cd-957d-79943d5cd0e7" />
+	</flow>
+</mule>
